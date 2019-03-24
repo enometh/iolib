@@ -1,0 +1,429 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Time-stamp: <>
+;;;   Touched: Sun Mar 24 11:55:16 2019 +0530 <enometh@net.meer>
+;;;   Bugs-To: enometh@net.meer
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2019 Madhu.  All Rights Reserved.
+;;;
+(in-package "CL-USER")
+
+(defvar *iolib-source-dir*
+  (merge-pathnames "iolib/" (translate-logical-pathname "EXTERN:")))
+(defvar *iolib-binary-dir* (binary-directory *iolib-source-dir*))
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "Compile-time configuration for IOLib."
+;;;
+(mk:defsystem :iolib.conf
+   :source-pathname *iolib-source-dir*
+   :binary-pathname *iolib-binary-dir*
+   :source-extension "lisp"
+   :components
+   ((:module "src"
+     :components ((:module "conf"
+		   :components
+		   ((:file "pkgdcl")
+		    (:file "requires" :depends-on ("pkgdcl"))))))))
+
+#+nil
+(mk:oos :iolib.conf :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;  "Slightly modified Common Lisp."
+;;;
+(mk:defsystem :iolib.common-lisp
+  :source-pathname *iolib-source-dir*
+  :binary-pathname *iolib-binary-dir*
+  :source-extension "lisp"
+  :depends-on (:iolib.conf :alexandria)
+  :components
+  ((:module "src"
+    :components
+    ((:module "new-cl"
+      :components
+      ((:file "conduits")
+       #+scl (:file "scl-gray-streams")
+       (:file "pkgdcl" :depends-on ("conduits" #+scl "scl-gray-streams")
+	:initially-do (funcall (find-symbol "LOAD-GRAY-STREAMS" :IOLIB.CONF)))
+       (:file "gray-streams"
+	:depends-on ("pkgdcl" #+scl "scl-gray-streams"))
+       (:file "definitions" :depends-on ("pkgdcl"))
+       (:file "types" :depends-on ("pkgdcl"))))))))
+
+#+nil
+(mk:oos :iolib.common-lisp :load :compile-during-load t)
+
+#+nil
+iolib.conf::load-gray-streams
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(mk:defsystem :iolib.base
+  :source-pathname *iolib-source-dir*
+  :binary-pathname *iolib-binary-dir*
+  :source-extension "lisp"
+  :depends-on (:iolib.conf  :split-sequence :iolib.common-lisp :alexandria)
+  :components
+  ((:module "src"
+    :components
+    ((:module "base"
+      :components
+      ((:file "pkgdcl")
+       (:file "return-star" :depends-on ("pkgdcl"))
+       (:file "types" :depends-on ("pkgdcl" "return-star"))
+       (:file "debug" :depends-on ("pkgdcl" "return-star"))
+       (:file "conditions" :depends-on ("pkgdcl" "return-star"))
+       (:file "defalias" :depends-on ("pkgdcl" "return-star"))
+       (:file "deffoldable" :depends-on ("pkgdcl" "return-star"))
+       (:file "defobsolete" :depends-on ("pkgdcl" "return-star"))
+       (:file "reader" :depends-on ("pkgdcl" "return-star" "conditions"))
+       (:file "sequence" :depends-on ("pkgdcl" "return-star"))
+       (:file "matching" :depends-on ("pkgdcl" "return-star"))
+       (:file "time" :depends-on ("pkgdcl" "return-star"))
+       (:file "dynamic-buffer"
+	:depends-on ("pkgdcl" "return-star" "sequence"))))))))
+
+#+nil
+(mk:oos :iolib.base :load :compile-during-load t)
+
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "Syscalls and foreign types."
+;;;
+(mk:defsystem :iolib/syscalls
+   :source-pathname *iolib-source-dir*
+   :binary-pathname *iolib-binary-dir*
+   :source-extension "lisp"
+   :depends-on (:iolib.conf :trivial-features :cffi :cffi-grovel)
+   :components
+   ((:module "src"
+     :components
+     ((:module "syscalls"
+       :components
+       ((:file "pkgdcl")
+	#+unix
+	(:file  "unix-syscall-path-strings")
+	;; Platform-specific files
+	(:file "ffi-types-unix" :language :cffi-grovel)
+	(:file "conditions")
+	(:file "os-conditions-unix" )
+	(:file "designators")
+	(:file "early")
+	(:file  "ffi-functions-unix")))))))
+
+#+nil
+(mk:oos :iolib/syscalls :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "I/O multiplexing library."
+;;;
+(mk:defsystem :iolib/multiplex
+   :source-pathname *iolib-source-dir*
+   :binary-pathname *iolib-binary-dir*
+   :source-extension "lisp"
+   :depends-on (:iolib.conf :iolib.base :iolib/syscalls :cffi)
+  :components
+  ((:module "multiplex"
+    :source-pathname "src/multiplex/"
+    :components
+    ((:file "pkgdcl")
+
+     ;; Scheduler
+     (:file "utils" :depends-on ("pkgdcl"))
+     (:file "timers" :depends-on ("pkgdcl"))
+     (:file "queue" :depends-on ("pkgdcl"))
+     (:file "scheduler" :depends-on ("pkgdcl" "timers" "queue"))
+
+     ;; Event loop
+     (:file "fd-entry" :depends-on ("pkgdcl" "timers"))
+     (:file "multiplexer" :depends-on ("pkgdcl" "utils" "fd-entry"))
+     (:file "event-loop" :depends-on ("pkgdcl" "timers" "queue" "scheduler"
+                                               "fd-entry" "multiplexer"))
+
+     ;; FD wait
+     (:file "fd-wait" :depends-on ("pkgdcl" "utils"))
+
+     ;; Event sources
+     (:file "backend-select"
+      :depends-on ("pkgdcl" "utils" "fd-entry" "multiplexer"))
+     #+linux
+     (:file "backend-epoll"
+      :depends-on ("pkgdcl" "utils" "fd-entry" "multiplexer"))
+     #+bsd
+     (:file "backend-kqueue"
+      :depends-on ("pkgdcl" "utils" "fd-entry" "multiplexer"))
+     (:file "detect"
+      :depends-on ("pkgdcl" "multiplexer" "backend-select"
+                            #+linux "backend-epoll" #+bsd "backend-kqueue"))))))
+
+#+nil
+(mk:oos :iolib/multiplex :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "Gray streams."
+;;;
+(mk:defsystem :iolib/streams
+   :source-pathname *iolib-source-dir*
+   :binary-pathname *iolib-binary-dir*
+   :source-extension "lisp"
+  :depends-on (:iolib.conf :iolib.base :iolib/multiplex :cffi)
+  :components
+  ((:module "gray"
+    :source-pathname "src/streams/gray"
+    :components
+    ((:file "pkgdcl")
+     (:file "classes" :depends-on ("pkgdcl"))
+     (:file "conditions" :depends-on ("pkgdcl"))
+     (:file "buffer" :depends-on ("pkgdcl" "classes"))
+     (:file "fd-mixin" :depends-on ("pkgdcl" "classes"))
+     (:file "io-helpers"
+      :depends-on ("pkgdcl" "classes" "conditions" "buffer" "fd-mixin"))
+     (:file "gray-stream-methods"
+      :depends-on ("pkgdcl" "classes" "conditions" "buffer" "fd-mixin"
+			    "io-helpers"))))))
+
+#+nil
+(mk:oos :iolib/streams :load :compile-during-load t)
+
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;  "New pathnames."
+;;;
+(mk:defsystem :iolib/pathnames
+   :source-pathname *iolib-source-dir*
+   :binary-pathname *iolib-binary-dir*
+   :source-extension "lisp"
+   :depends-on (:iolib.conf :iolib.base :iolib/syscalls)
+   :components
+   ((:module "pathnames"
+     :source-pathname "src/pathnames/"
+     :components
+     ((:file "pkgdcl")
+      (:file "file-path")
+      (:file "file-path-unix")))))
+
+#+nil
+(mk:oos :iolib/pathnames :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "Zeta streams."
+;;;
+(mk:defsystem :iolib/zstreams
+  :source-pathname *iolib-source-dir*
+  :binary-pathname *iolib-binary-dir*
+  :source-extension "lisp"
+  :depends-on (:iolib.base :iolib/syscalls :iolib/pathnames :cffi :bordeaux-threads)
+  :components
+  ((:module "zeta"
+    :source-pathname "src/streams/zeta/"
+    :components
+    ((:file "pkgdcl")
+     (:file "types" :depends-on ("pkgdcl"))
+     (:file "conditions" :depends-on ("pkgdcl"))
+
+     ;; Platform-specific files
+     (:file "ffi-functions-unix" :depends-on ("pkgdcl" "conditions"))
+
+     ;; Device interface definition
+     (:file "device" :depends-on ("pkgdcl" "types"))
+
+     ;; Low-level buffers
+     (:file "iobuf" :depends-on ("pkgdcl" "types"))
+
+     ;; Streams
+     (:file "stream" :depends-on ("pkgdcl" "types" "conditions" "device" "iobuf"))
+
+     ;; Devices
+     (:file "file-unix" :depends-on ("pkgdcl" "types" "conditions" "ffi-functions-unix" "device" "stream"))))))
+
+
+#+nil
+(mk:oos :iolib/zstreams :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "Socket library."
+;;;
+(mk:defsystem :iolib/sockets
+   :source-pathname *iolib-source-dir*
+   :binary-pathname *iolib-binary-dir*
+   :source-extension "lisp"
+   :depends-on (:iolib.conf :iolib.base :iolib/syscalls
+	       :iolib/streams
+               :babel :cffi :cffi-grovel :bordeaux-threads
+               :idna :swap-bytes)
+
+
+  :components
+  ((:module "sockets"
+    :source-pathname "src/sockets/"
+    :components
+    ((:file "pkgdcl")
+     (:file "grovel" :depends-on ("pkgdcl") :language :cffi-grovel)
+     (:file "conditions" :depends-on ("pkgdcl" "grovel"))
+     (:file "bsd" :depends-on ("pkgdcl" "grovel" "conditions"))
+     (:file "common" :depends-on ("pkgdcl" "grovel" "bsd"))
+     (:file "config" :depends-on ("pkgdcl" "grovel" "bsd"))
+
+     (:file "iface" :depends-on ("pkgdcl" "grovel" "bsd" "common"))
+
+     (:file "address" :depends-on ("pkgdcl" "common"))
+     (:file "address-predicates" :depends-on ("pkgdcl" "common" "address"))
+     (:file "address-arithmetic" :depends-on ("pkgdcl" "common" "address" "address-predicates"))
+
+     (:file "base-sockets" :depends-on ("pkgdcl" "bsd" "common" "config"))
+     (:file "socket-options"
+      :depends-on ("pkgdcl" "grovel" "conditions" "bsd" "common" "config" "base-sockets"))
+
+
+     ;; Local file configuration (/etc/hosts etc...)
+     (:module "etc-files"
+      :source-pathname "namedb/"
+      :depends-on ("pkgdcl")
+      :components ((:file "etc-files")))
+
+     (:module "file-monitor"
+      :depends-on ("pkgdcl")
+      :source-pathname "namedb/"
+      :components ((:file "file-monitor")))
+
+     (:module "protocols"
+      :source-pathname "namedb/"
+      :depends-on ("pkgdcl" "common" "etc-files" "file-monitor")
+      :components ((:file "protocols")))
+
+
+     (:module "services"
+      :source-pathname "namedb/"
+      :depends-on ("pkgdcl" "common" "etc-files" "file-monitor")
+      :components ((:file "services")))
+
+     (:module "hosts"
+      :source-pathname "namedb/"
+      :depends-on ("pkgdcl" "address" "address-predicates" "etc-files" "file-monitor")
+      :components ((:file "hosts")))
+
+     (:file "socket-methods"
+      :depends-on ("pkgdcl" "grovel" "conditions" "bsd" "common" "config"
+			    "address" "address-predicates" "base-sockets" "socket-options"
+			    "protocols" "services"))
+
+     (:file "make-socket"
+      :depends-on ("pkgdcl" "grovel" "common" "config" "address" "address-predicates"
+			    "base-sockets" "socket-options" "services" "socket-methods"))
+
+     ;; DNS client
+     (:module "dns-common"
+      :source-pathname "dns"
+      :components ((:file "common"))
+      :depends-on ("pkgdcl" "common"))
+
+     (:module "nameservers" :source-pathname "dns"
+      :depends-on ("pkgdcl" "address" "address-predicates" "etc-files" "file-monitor")
+      :components ((:file "nameservers")))
+
+     (:module "message":source-pathname "dns"
+      :components ((:file "message"))
+      :depends-on ("pkgdcl" "common" "dns-common"))
+
+     (:module "query" :source-pathname "dns"
+      :components ((:file "query"))
+      :depends-on ("pkgdcl" "conditions" "address" "address-predicates"
+			    "socket-options" "socket-methods" "make-socket" "dns-common"
+			    "nameservers" "message"))
+
+     (:module "dns-conditions" :source-pathname "dns"
+      :components ((:file "conditions"))
+      :depends-on ("pkgdcl"))
+
+     (:module "lookup" :source-pathname "dns"
+      :components ((:file "lookup"))
+      :depends-on ("pkgdcl" "address" "address-predicates" "file-monitor" "hosts"
+			    "nameservers" "message" "query" "dns-conditions"))))))
+
+#+nil
+(mk:oos :iolib/sockets :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "Trivial-Sockets compatibility layer."
+;;;
+
+(mk:defsystem :iolib/trivial-sockets
+  :source-pathname *iolib-source-dir*
+  :binary-pathname *iolib-binary-dir*
+  :depends-on (:iolib.conf :iolib.base :iolib/sockets)
+  :source-extension "lisp"
+  :components ((:module "trivial-sockets"
+		:source-pathname "src/sockets"
+		:components
+		((:file "trivial-sockets")))))
+
+#+nil
+(mk:oos :iolib/trivial-sockets :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "OS interface."
+;;;
+(mk:defsystem :iolib/os
+  :source-pathname *iolib-source-dir*
+  :binary-pathname *iolib-binary-dir*
+  :source-extension "lisp"
+  :depends-on ( :iolib.conf :cffi-grovel
+			    :iolib.base :iolib/syscalls
+			    :iolib/streams :iolib/pathnames)
+  :components
+  ((:module "src"
+    :components
+    ((:module "os"
+      :components
+      ((:file "pkgdcl")
+       (:file "os-unix")
+       (:file "ffi-types-unix" :language :cffi-grovel)
+       (:file "ffi-functions-unix")
+       (:file "create-process-unix")))))))
+
+#+nil
+(mk:oos :iolib/os :load :compile-during-load t)
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;; "I/O library."
+;;;
+(mk:defsystem :iolib
+  :source-pathname *iolib-source-dir*
+  :binary-pathname *iolib-binary-dir*
+  :source-extension "lisp"
+  :depends-on (:iolib.base :iolib/multiplex :iolib/streams :iolib/sockets
+	       :iolib.conf)
+  :components ((:module "src"
+		:components ((:module "iolib"
+			      :components
+			      ((:file "pkgdcl"))))
+		)))
+
+#+nil
+(mk:oos :iolib :load :compile-during-load t)
