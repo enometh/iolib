@@ -127,7 +127,7 @@
   (defmethod sb-gray:stream-line-length ((stream trivial-gray-stream-mixin))
     80))
 
-#+ecl
+#+(or mkcl ecl)
 (progn
   (defmethod gray:stream-read-sequence
       ((s trivial-gray-stream-mixin) seq &optional start end)
