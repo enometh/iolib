@@ -11,6 +11,6 @@
     (require "streamc"))
   #+(or cmu abcl)
   (require :gray-streams)
-  #+ecl
+  #+(or mkcl ecl)
   (when (fboundp 'gray::redefine-cl-functions)
     (gray::redefine-cl-functions)))
