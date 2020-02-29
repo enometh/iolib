@@ -15,13 +15,17 @@
 @c A Texinfo binding for the plain TeX above.  Analogous to Texinfo's
 @c @w, but for Lisp symbols.  AFAICT, the comment characters are
 @c necessary to prevent treating the newline as a space.
-@macro lw{word}
 @iftex
+@macro lw{word}
 @tex
 \\lw{\word\}%
 @end tex
-@end iftex
-@ifnottex
-\word\@c
-@end ifnottex
 @end macro
+@end iftex
+
+@ifnottex
+@macro lw{word}
+\word
+@end macro
+@end ifnottex
+
