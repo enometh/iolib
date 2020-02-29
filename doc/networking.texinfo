@@ -38,8 +38,9 @@ Describe networking here.
 @include include/class-sockets-socket-stream-internet-passive.texinfo
 @include include/class-sockets-socket-stream-local-active.texinfo
 @include include/class-sockets-socket-stream-local-passive.texinfo
-@include include/class-sockets-socket-datagram-internet-active.texinfo
-@include include/class-sockets-socket-datagram-local-active.texinfo
+@c madhu ;madhu 200229 the following are missing
+@c @include include/class-sockets-socket-datagram-internet-active.texinfo
+@c @include include/class-sockets-socket-datagram-local-active.texinfo
 
 @node Socket Operators
 @subsection Socket Operators and Macros
