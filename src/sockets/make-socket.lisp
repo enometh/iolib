@@ -90,6 +90,7 @@ call CLOSE with :ABORT T on `VAR'."
              (destructuring-bind (&key ,@parameters)
                  arguments
                ,(make-first-level-body family protocol)))
+           #-clozure
            (define-compiler-macro ,first-level-function (&whole form arguments family protocol)
              ;; Must quote default values in order for them not to be evaluated
              ;; in the compilation environment
