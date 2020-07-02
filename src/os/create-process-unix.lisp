@@ -68,7 +68,8 @@
   (print-unreadable-object (o s :type t :identity nil)
     (format s "~S ~S ~S ~S"
             :pid (process-pid o)
-            :status (process-status o))))
+            ;;madhu 200702 - don't choke when process-status fails
+            :status (ignore-errors (process-status o)))))
 
 (defun exit-status (status)
   (cond
@@ -83,8 +84,13 @@
     (if (integerp (slot-value process 'status))
         (exit-status (slot-value process 'status))
         (multiple-value-bind (pid status)
-            (isys:waitpid (process-pid process)
-                          (if wait 0 isys:wnohang))
+            (handler-case
+                (isys:waitpid (process-pid process)
+                              (if wait 0 isys:wnohang))
+              ;;madhu 200702 kludge the case for lispworks
+              (isys:echild (e)
+                (warn "Handling ECHILD on process ~A" process)
+                (values (process-pid process) -10)))
           (cond
             ((zerop pid)
              :running)
