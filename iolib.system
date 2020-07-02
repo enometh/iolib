@@ -427,3 +427,28 @@ iolib.conf::load-gray-streams
 
 #+nil
 (mk:oos :iolib :load :compile-during-load t)
+
+(mk:defsystem :iolib/tests
+  :source-pathname *iolib-source-dir*
+  :binary-pathname *iolib-binary-dir*
+  :source-extension "lisp"
+  :depends-on (:fiveam :iolib :iolib/pathnames)
+  :components
+  ((:module "tests"
+    :components
+    ((:file "pkgdcl")
+     (:file "defsuites" :depends-on ("pkgdcl"))
+     (:file "base" :depends-on ("pkgdcl" "defsuites"))
+     #+unix
+     (:file "file-paths-unix" :depends-on ("pkgdcl" "defsuites"))
+     (:file "multiplex" :depends-on ("pkgdcl" "defsuites"))
+     (:file "streams" :depends-on ("pkgdcl" "defsuites"))
+     ;;(:file "sockets" :depends-on ("pkgdcl" "defsuites"))
+     ))))
+
+#+nil
+(mk:oos :iolib/tests :load :compile-during-load t)
+
+#+nil
+(5am:run! :iolib)
+

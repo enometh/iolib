@@ -74,11 +74,11 @@
          ,@body))))
 
 (defvar *data-dir*
-  (asdf:system-relative-pathname "iolib" "tests/data/"))
+  (mk::system-relative-pathname "iolib" "tests/data/"))
 
 (defvar *test-dir*
-  (asdf:apply-output-translations
-   (asdf:system-relative-pathname "iolib" "tests/test-dir/")))
+  (identity ;;asdf:apply-output-translations
+   (mk::system-relative-pathname "iolib" "tests/test-dir/")))
 
 ;;; A list of test files where each entry consists of the name
 ;;; prefix and a list of encodings.
