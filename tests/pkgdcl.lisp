@@ -6,7 +6,8 @@
 (in-package :cl-user)
 
 (defpackage :iolib/tests
-  (:nicknames :iolib/tests)
+;; ;madhu 200702 - duplicate
+;;  (:nicknames :iolib/tests)
   (:use :5am :iolib/base :iolib :iolib/pathnames)
   #+sb-package-locks
   (:lock t)

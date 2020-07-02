@@ -253,8 +253,9 @@
    #:sigaction
    #:handler
    ;; Sigaction()
-   #:sig-ign
-   #:sig-dfl
+;; ;madhu 200702 - duplicate
+;;   #:sig-ign
+;;   #:sig-dfl
    #:sa-nocldstop
    #:sa-nocldwait
    #:sa-nodefer
