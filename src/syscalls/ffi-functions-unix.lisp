@@ -126,7 +126,7 @@ The two memory areas may overlap."
   "Open a file descriptor for PATH using FLAGS and permissions MODE(#o600 by default)."
   (%open path flags mode))
 
-(defkernel (creat "lfp_creat_k")
+(defsyscall (creat "lfp_creat")
     (:int :restart t)
   "Create file PATH with permissions MODE and return the new FD."
   (path sstring)
@@ -492,20 +492,20 @@ Return two values: the file descriptor and the path of the temporary file."
     (t (error 'type-error :datum arg
               :expected-type '(or null integer foreign-pointer)))))
 
-(defkernel (fd-cloexec-p "lfp_is_fd_cloexec_k") bool-designator
+(defsyscall (fd-cloexec-p "lfp_is_fd_cloexec") bool-designator
   (fd :int))
 
-(defkernel (%set-fd-cloexec "lfp_set_fd_cloexec_k") :int
+(defsyscall (%set-fd-cloexec "lfp_set_fd_cloexec") :int
   (fd      :int)
   (enabled bool-designator))
 
 (defentrypoint (setf fd-cloexec-p) (enabled fd)
   (%set-fd-cloexec fd enabled))
 
-(defkernel (fd-nonblock-p "lfp_is_fd_nonblock_k") bool-designator
+(defsyscall (fd-nonblock-p "lfp_is_fd_nonblock") bool-designator
   (fd :int))
 
-(defkernel (%set-fd-nonblock "lfp_set_fd_nonblock_k") :int
+(defsyscall (%set-fd-nonblock "lfp_set_fd_nonblock") :int
   (fd      :int)
   (enabled bool-designator))
 
@@ -517,13 +517,14 @@ Return two values: the file descriptor and the path of the temporary file."
 
 (defsyscall (fd-tty-p "isatty") bool-designator
   (fd :int))
+
 
 
 ;;;-------------------------------------------------------------------------
 ;;; TTYs
 ;;;-------------------------------------------------------------------------
 
-(defkernel (openpt "lfp_openpt_k") :int
+(defsyscall (openpt "lfp_openpt") :int
   (flags :uint64))
 
 (defsyscall (grantpt "grantpt")
