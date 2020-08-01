@@ -147,6 +147,11 @@
                    (iobuf output-buffer-of))
       stream
     (cond ((iobuf-can-fit-slice-p iobuf start end)
+           #+lispworks
+           (setq array (make-array (length array)
+                             :element-type '(unsigned-byte 8)
+                             :initial-contents array
+                             :allocation :static))
            (iobuf-append-slice iobuf array start end))
           (t
            (with-hangup-guard stream
@@ -298,5 +303,10 @@
           (babel:string-to-octets string
                                   :start start :end chunk-end
                                   :encoding encoding)))
+    #+lispworks
+    (setq octets (make-array (length octets)
+                             :element-type '(unsigned-byte 8)
+                             :initial-contents octets
+                             :allocation :static))
     (%write-simple-array-ub8 stream octets 0 (length octets))
     chunk-end))
