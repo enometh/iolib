@@ -263,7 +263,9 @@
   (let ((char (stream-read-char-no-hang stream)))
     (cond ((characterp char) (stream-unread-char stream char) t)
           ((eql :eof char) nil)
-          (t t))))
+          ((null char) nil)
+          (t (error "Unexpected value char ~A from STREAM-UNREAD-CHAR" char )))))
+
 
 
 ;;;-------------------------------------------------------------------------
