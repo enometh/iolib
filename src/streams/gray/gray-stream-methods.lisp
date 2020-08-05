@@ -299,6 +299,7 @@
         (encoding (babel:external-format-encoding ef)))
       ((= start end))
     (case (char string start)
+      #-lispworks
       (#\Newline
        (funcall (eol-writer-of stream) stream)
        (incf start))
