@@ -5,15 +5,27 @@
 
 (in-package :iolib/syscalls)
 
+#+nil
 (eval-when (:compile-toplevel)
   (declaim (optimize (speed 3) (safety 1) (debug 1))))
 
 ;; FIXME: move this into an ASDF operation
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (define-foreign-library
-      (libfixposix :canary "lfp_buildinfo")
+  (cffi::define-foreign-library
+      (libfixposix  #-ecl ;madhu 200904 - wtf
+;; LAMBDA: Keyword expected, got "/usr/64/libecl.so.20.4: undefined symbol: lfp_buildinfo". on (make-pathname :device)
+       :canary      #-ecl
+       "lfp_buildinfo")
     (t (:default "libfixposix")))
-  (load-foreign-library 'libfixposix))
+  (cffi::load-foreign-library 'libfixposix))
+
+#||
+(cffi::load-foreign-library 'libfixposix)
+(slot-value (cffi::get-foreign-library 'libfixposix) 'cffi::spec)
+(getf (cffi::foreign-library-options  (cffi::get-foreign-library 'libfixposix)) :canary)
+(cffi:foreign-symbol-pointer "lfp_buildinfo")
+(cffi:foreign-symbol-pointer "lfp_open_k")
+||#
 
 
 ;;;-------------------------------------------------------------------------
