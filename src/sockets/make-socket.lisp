@@ -331,6 +331,19 @@ call CLOSE with :ABORT T on `VAR'."
          (if ipv6p `(let ((*ipv6* ,ipv6)) ,expansion) expansion))))
     (t form)))
 
+#+mkcl
+(eval-when (load eval compile)
+  (shadow 'cl:with-open-stream))
+
+#+mkcl
+(eval-when (load eval compile)
+  (defmacro with-open-stream  ((var stream) &body body &aux (svar (gensym)))
+    `(let (,svar)
+       (unwind-protect
+            (let ((,var (setq ,svar ,stream)))
+              ,@body)
+         (when ,svar (gray::close ,svar))))))
+
 (defmacro with-open-socket ((var &rest args) &body body)
   "Bind VAR to a socket created by passing ARGS to MAKE-SOCKET and execute BODY as implicit PROGN.
 The socket is automatically closed upon exit."
