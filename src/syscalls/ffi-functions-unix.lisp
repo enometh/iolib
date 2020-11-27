@@ -12,9 +12,9 @@
 ;; FIXME: move this into an ASDF operation
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (cffi::define-foreign-library
-      (libfixposix  #-ecl ;madhu 200904 - wtf
+      (libfixposix  #-(or ecl mkcl) ;madhu 200904 - wtf
 ;; LAMBDA: Keyword expected, got "/usr/64/libecl.so.20.4: undefined symbol: lfp_buildinfo". on (make-pathname :device)
-       :canary      #-ecl
+       :canary      #-(or ecl mkcl)
        "lfp_buildinfo")
     (t (:default "libfixposix")))
   (cffi::load-foreign-library 'libfixposix))

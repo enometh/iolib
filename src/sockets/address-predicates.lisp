@@ -14,6 +14,28 @@
   `(defconstant (,name :test 'address=) (ensure-address ,address-string)
      ,(format nil "~A (~A)" docstring address-string)))
 
+#+(and nil mkcl)
+(mapcar (lambda (x) (let ((s (find-symbol (symbol-name x) *package*)))
+                      (and s (unintern s))))
+        '(#:+ipv4-loopback+
+          #:+ipv4-unspecified+
+          #:+ipv6-interface-local-all-nodes+
+          #:+ipv6-interface-local-all-routers+
+          #:+ipv6-link-local-all-nodes+
+          #:+ipv6-link-local-all-routers+
+          #:+ipv6-loopback+
+          #:+ipv6-site-local-all-routers+
+          #:+ipv6-unspecified+
+          #:+max-ipv4-value+
+          #:+any-host+
+          #:+loopback+))
+
+#||
+(type-of +ipv4-unspecified+) IPV4-ADDRESS
+(type-of (ensure-address "0.0.0.0"))
+(address= +ipv4-unspecified+  (ensure-address "0.0.0.0"))
+||#
+
 (define-address +ipv4-unspecified+ "0.0.0.0"   "Unspecified IPv4 address.")
 (define-address +ipv4-loopback+    "127.0.0.1" "Loopback IPv4 address.")
 (define-address +ipv6-unspecified+ "::"        "Unspecified IPv6 address.")

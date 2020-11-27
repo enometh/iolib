@@ -26,6 +26,7 @@
                 #:stream-clear-input #:stream-write-char #:stream-line-column
                 #:stream-start-line-p #:stream-write-string #:stream-terpri
                 #:stream-fresh-line #:stream-finish-output #:stream-force-output
+                #+mkcl "OPEN-STREAM-P" #+mkcl "STREAM-ELEMENT-TYPE" #+mkcl "CLOSE"
                 #:stream-clear-output #:stream-advance-to-column
                 #:stream-read-byte #:stream-write-byte)))
          `(defpackage :iolib/common-lisp
@@ -34,7 +35,11 @@
                                #:export #:unexport #:defpackage 
                                #:delete-package #:rename-package
                                #:defconstant
-                               #:boolean)
+                               #:boolean
+             #+mkcl #:close
+             #+mkcl #:stream-element-type
+             #+mkcl :open-stream-p
+             )
             (:export #:defconstant #:boolean)
             (:extend/excluding :iolib/internal/conduits
                                #:recompute-conduits)
@@ -49,3 +54,7 @@
 (defpackage :iolib/common-lisp-user
   (:nicknames :iolib/cl-user :iolib.cl-user)
   (:use :iolib/common-lisp))
+
+#||
+#'iolib/common-lisp:close
+||#
