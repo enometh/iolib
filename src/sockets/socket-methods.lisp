@@ -165,7 +165,8 @@
 
 (defmethod close ((socket socket) &key abort)
   (declare (ignore abort))
-  (when (next-method-p)
+  (when (and (next-method-p)
+             #+lispworks (streamp socket))
     (call-next-method))
   (socket-open-p socket))
 
