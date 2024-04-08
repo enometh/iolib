@@ -360,7 +360,7 @@ Signals an error if TARGET does not exist, or LINK exists already."
         (absolute-file-path *default-file-path-defaults* nil)
       (isys:link (file-path-namestring
                        (merge-file-paths target link))
-                      link)
+                 (file-path-namestring link))
       link)))
 
 
